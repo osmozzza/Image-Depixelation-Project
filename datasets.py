@@ -1,3 +1,7 @@
+"""
+Datasets file of _________.
+"""
+
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
@@ -37,8 +41,10 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
     :param height: The height of the pixelated area.
     :param size: The size of each pixelation block.
     :return: a tuple containing the pixelated image, a binary mask indicating
-    the pixelated area, and a copy of the original pixel values within the pixelated area.
+    the pixelated area, and the original image.
     """
+    original_image = image.copy()
+
     pixelated_image = image.copy()
     curr_x = x
     while curr_x < x + width:
@@ -50,16 +56,13 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
         curr_x += size
 
     pixelated_area = (..., slice(y, y + height), slice(x, x + width))
-
     known_array = np.ones_like(image, dtype=bool)
     known_array[pixelated_area] = False
 
-    target_array = image[pixelated_area].copy()
-
-    return pixelated_image, known_array, target_array
+    return pixelated_image, known_array, original_image
 
 
-class ImagePixelationDataset(Dataset):
+class TrainingDataset(Dataset):
 
     def __init__(self, image_dir, dtype=None     #preveri kaj s tem
     ):
@@ -95,7 +98,11 @@ class ImagePixelationDataset(Dataset):
 
         prepared_image = prepare_image(gs_image, x, y, width, height, size)
 
-        return prepared_image[0], prepared_image[1], prepared_image[2], image_file
+        inputs = np.zeros(shape=(*gs_image.shape, 2))
+        inputs[..., 0] = prepared_image[0]
+        inputs[..., 1] = prepared_image[1]
+
+        return inputs, prepared_image[2], index
 
     def __len__(self):
         return len(self.image_files)
@@ -104,17 +111,19 @@ class ImagePixelationDataset(Dataset):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    ds = ImagePixelationDataset(
+    ds = TrainingDataset(
         r"C:\Users\angel\OneDrive - Johannes Kepler Universität Linz\FAKS\SS 2023\Programming in Python II\Image Depixelation Project\two_images"
     )
-    for pixelated_image, known_array, target_array, image_file in ds:
+
+    for inputs, original_image, index in ds:
+        print(original_image[0].shape)
         fig, axes = plt.subplots(ncols=3)
-        axes[0].imshow(pixelated_image[0], cmap="gray", vmin=0, vmax=255)
+        axes[0].imshow(inputs[0][:,:,0], cmap="gray", vmin=0, vmax=255)
         axes[0].set_title("pixelated_image")
-        axes[1].imshow(known_array[0], cmap="gray", vmin=0, vmax=1)
+        axes[1].imshow(inputs[0][:,:,1], cmap="gray", vmin=0, vmax=1)
         axes[1].set_title("known_array")
-        axes[2].imshow(target_array[0], cmap="gray", vmin=0, vmax=255)
-        axes[2].set_title("target_array")
-        fig.suptitle(image_file)
+        axes[2].imshow(original_image[0], cmap="gray", vmin=0, vmax=255)
+        axes[2].set_title("original image")
+        fig.suptitle(index)
         fig.tight_layout()
         plt.show()
