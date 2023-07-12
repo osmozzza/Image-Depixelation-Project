@@ -1,5 +1,9 @@
 """
-Datasets file of _________.
+Author: Angelika Vižintin
+
+################################################################################
+
+Datasets file of Image Depixelation Project.
 """
 
 import numpy as np
@@ -7,6 +11,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import glob
 import os
+import dill as pickle
 import torch
 from torchvision import transforms
 
@@ -97,7 +102,6 @@ class TrainingDataset(Dataset):
         prepared_image = prepare_image(gs_image, x, y, width, height, size)
 
         inputs = np.concatenate((prepared_image[0], prepared_image[1]), axis=0)
-        inputs = np.reshape(inputs, (2, 64, 64))
 
         return inputs, prepared_image[2], index
 
@@ -105,21 +109,34 @@ class TrainingDataset(Dataset):
         return len(self.image_files)
 
 
+class TestDataset(Dataset):
+
+    def __init__(self, pkl_file):
+        """"""
+        with open(pkl_file, 'rb') as file:
+            test_set = pickle.load(file)
+        self.pixelated_images = test_set['pixelated_images']
+        self.known_arrays = test_set['known_arrays']
+
+    def __getitem__(self, index: int):
+        inputs = np.concatenate((self.pixelated_images[index], self.known_arrays[index]), axis=0)
+        return inputs, index
+
+    def __len__(self):
+        return len(self.pixelated_images)
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    ds = TrainingDataset(
-        r"C:\Users\angel\OneDrive - Johannes Kepler Universität Linz\FAKS\SS 2023\Programming in Python II\Image Depixelation Project\two_images"
-    )
+    ds = TestDataset("test_set.pkl")
 
-    for inputs, original_image, index in ds:
-        fig, axes = plt.subplots(ncols=3)
-        axes[0].imshow(inputs[0], cmap="gray", vmin=0, vmax=255)
-        axes[0].set_title("pixelated_image")
-        axes[1].imshow(inputs[1], cmap="gray", vmin=0, vmax=1)
-        axes[1].set_title("known_array")
-        axes[2].imshow(original_image[0], cmap="gray", vmin=0, vmax=255)
-        axes[2].set_title("original image")
-        fig.suptitle(index)
-        fig.tight_layout()
-        plt.show()
+    inputs, index = ds[0]
+    fig, axes = plt.subplots(ncols=2)
+    axes[0].imshow(inputs[0], cmap="gray", vmin=0, vmax=255)
+    axes[0].set_title("pixelated_image")
+    axes[1].imshow(inputs[1], cmap="gray", vmin=0, vmax=1)
+    axes[1].set_title("known_array")
+    fig.suptitle(index)
+    fig.tight_layout()
+    plt.show()
