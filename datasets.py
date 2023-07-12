@@ -7,11 +7,12 @@ from PIL import Image
 from torch.utils.data import Dataset
 import glob
 import os
+import torch
 from torchvision import transforms
 
 def to_grayscale(img_array: np.ndarray) -> np.ndarray:
     """Converts image as numpy array of shape (H, W, 1) or (H, W, 3) to
-    grayscale image as numpy array of shape (1, H, W)."""
+    grayscale image as numpy array of shape (1, H, W) with uint8 data type."""
     if img_array.ndim == 2:
         gs_image = np.reshape(img_array.copy(), (1, img_array.shape[0], img_array.shape[1]))
     elif img_array.ndim == 3:
@@ -43,9 +44,9 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
     :return: a tuple containing the pixelated image, a binary mask indicating
     the pixelated area, and the original image.
     """
-    original_image = image.copy()
+    original_image = torch.from_numpy(image.copy()).float()
 
-    pixelated_image = image.copy()
+    pixelated_image = torch.from_numpy(image.copy()).float()
     curr_x = x
     while curr_x < x + width:
         curr_y = y
@@ -56,7 +57,7 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
         curr_x += size
 
     pixelated_area = (..., slice(y, y + height), slice(x, x + width))
-    known_array = np.ones_like(image, dtype=bool)
+    known_array = np.ones_like(image, dtype=bool).astype(np.bool)
     known_array[pixelated_area] = False
 
     return pixelated_image, known_array, original_image
@@ -64,18 +65,15 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
 
 class TrainingDataset(Dataset):
 
-    def __init__(self, image_dir, dtype=None     #preveri kaj s tem
-    ):
+    def __init__(self, image_dir):
         """
         Dataset which resizes, crops, converts to grayscale and pixelates images located in a specified directrory.
 
         :param image_dir: the directory where the images are located
-        :param dtype:
         """
         self.image_files = sorted(glob.glob(os.path.join(os.path.abspath(image_dir), "**", "*.jpg"), recursive=True))
         self.width_range = (4, 32)
         self.height_range = (4, 32)
-        self.dtype = dtype #preveri kaj s tem
 
     def __getitem__(self, index: int):
         transforms_chain = transforms.Compose([
@@ -98,9 +96,8 @@ class TrainingDataset(Dataset):
 
         prepared_image = prepare_image(gs_image, x, y, width, height, size)
 
-        inputs = np.zeros(shape=(*gs_image.shape, 2))
-        inputs[..., 0] = prepared_image[0]
-        inputs[..., 1] = prepared_image[1]
+        inputs = np.concatenate((prepared_image[0], prepared_image[1]), axis=0)
+        inputs = np.reshape(inputs, (2, 64, 64))
 
         return inputs, prepared_image[2], index
 
@@ -116,11 +113,10 @@ if __name__ == '__main__':
     )
 
     for inputs, original_image, index in ds:
-        print(original_image[0].shape)
         fig, axes = plt.subplots(ncols=3)
-        axes[0].imshow(inputs[0][:,:,0], cmap="gray", vmin=0, vmax=255)
+        axes[0].imshow(inputs[0], cmap="gray", vmin=0, vmax=255)
         axes[0].set_title("pixelated_image")
-        axes[1].imshow(inputs[0][:,:,1], cmap="gray", vmin=0, vmax=1)
+        axes[1].imshow(inputs[1], cmap="gray", vmin=0, vmax=1)
         axes[1].set_title("known_array")
         axes[2].imshow(original_image[0], cmap="gray", vmin=0, vmax=255)
         axes[2].set_title("original image")
