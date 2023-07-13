@@ -7,7 +7,6 @@ Utils file of Image Depixelation Project.
 """
 from matplotlib import pyplot as plt
 
-
 def plot_loss(train_losses, eval_losses, eval_epochs):
     x = range(len(train_losses))
 
@@ -15,9 +14,13 @@ def plot_loss(train_losses, eval_losses, eval_epochs):
     plt.plot(eval_epochs, eval_losses, label='eval loss')
 
     plt.xlabel('Epoch')
-    plt.xticks(range(1, len(train_losses) + 1))
+    plt.xticks(eval_epochs)
     plt.ylabel('MSE')
     plt.legend()
 
     plt.show()
+
+
+
+
 
