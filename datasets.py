@@ -71,7 +71,8 @@ class TrainingDataset(Dataset):
 
     def __init__(self, image_dir):
         """
-        Dataset which resizes, crops, converts to grayscale and pixelates images located in a specified directrory.
+        Dataset which resizes, crops, converts to grayscale, pixelates and normalizes to range [0,1]
+        images located in a specified directrory.
 
         :param image_dir: the directory where the images are located
         """
@@ -111,7 +112,9 @@ class TrainingDataset(Dataset):
 class TestDataset(Dataset):
 
     def __init__(self, pkl_file):
-        """"""
+        """ The class accesses the pixelated images and known arrays from the specified pickle file pkl_file,
+        normalized the pixelated images to the range [0,1] and prepares inputs for a CNN by stacking the
+        pixelated images with the known arrays."""
         with open(pkl_file, 'rb') as file:
             test_set = pickle.load(file)
         self.pixelated_images = test_set['pixelated_images']
@@ -120,7 +123,8 @@ class TestDataset(Dataset):
     def __getitem__(self, index: int):
         norm_pixelated_image = self.pixelated_images[index] / 255
         inputs = np.concatenate((norm_pixelated_image, self.known_arrays[index]), axis=0)
-        return inputs, index
+        inputs_tensor = torch.from_numpy(inputs).type(torch.FloatTensor)
+        return inputs_tensor, inputs, index
 
     def __len__(self):
         return len(self.pixelated_images)
@@ -129,9 +133,9 @@ class TestDataset(Dataset):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    ds = TrainingDataset("two_images")
+    ds = TestDataset("test_set.pkl")
 
-    inputs, _, index = ds[0]
+    inputs, index = ds[0]
     fig, axes = plt.subplots(ncols=2)
     axes[0].imshow(inputs[0] * 255, cmap="gray", vmin=0, vmax=255)
     axes[0].set_title("pixelated_image")
@@ -140,3 +144,5 @@ if __name__ == '__main__':
     fig.suptitle(index)
     fig.tight_layout()
     plt.show()
+
+    print(inputs[0] * 255)
