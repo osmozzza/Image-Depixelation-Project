@@ -36,8 +36,7 @@ def to_grayscale(img_array: np.ndarray) -> np.ndarray:
 
 def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, size: int) -> \
         tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    The function takes an input grayscale image of shape (1, H, W) along with specified coordinates
+    """ The function takes an input grayscale image of shape (1, H, W) along with specified coordinates
     and dimensions to pixelate a specific area of the image.
 
     :param image: A NumPy array representing the input image.
@@ -46,8 +45,8 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
     :param width: The width of the pixelated area.
     :param height: The height of the pixelated area.
     :param size: The size of each pixelation block.
-    :return: a tuple containing the pixelated image, a binary mask indicating
-    the pixelated area, and the original image.
+    :return: a tuple containing the pixelated image normalized to range [0,1], a binary mask indicating
+    the pixelated area, and the original image normilized to range [0,1].
     """
     original_image = torch.from_numpy(image.copy()).float()
 
@@ -65,7 +64,7 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
     known_array = np.ones_like(image, dtype=bool).astype(np.bool)
     known_array[pixelated_area] = False
 
-    return pixelated_image, known_array, original_image
+    return pixelated_image / 255, known_array, original_image / 255
 
 
 class TrainingDataset(Dataset):
@@ -119,7 +118,8 @@ class TestDataset(Dataset):
         self.known_arrays = test_set['known_arrays']
 
     def __getitem__(self, index: int):
-        inputs = np.concatenate((self.pixelated_images[index], self.known_arrays[index]), axis=0)
+        norm_pixelated_image = self.pixelated_images[index] / 255
+        inputs = np.concatenate((norm_pixelated_image, self.known_arrays[index]), axis=0)
         return inputs, index
 
     def __len__(self):
@@ -129,11 +129,11 @@ class TestDataset(Dataset):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    ds = TestDataset("test_set.pkl")
+    ds = TrainingDataset("two_images")
 
-    inputs, index = ds[0]
+    inputs, _, index = ds[0]
     fig, axes = plt.subplots(ncols=2)
-    axes[0].imshow(inputs[0], cmap="gray", vmin=0, vmax=255)
+    axes[0].imshow(inputs[0] * 255, cmap="gray", vmin=0, vmax=255)
     axes[0].set_title("pixelated_image")
     axes[1].imshow(inputs[1], cmap="gray", vmin=0, vmax=1)
     axes[1].set_title("known_array")
