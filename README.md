@@ -23,6 +23,4 @@ example_project
 |    A readme file containing information about the project
 |- utils.py
 |    Utility function for plotting training and evaluation loss.
-|- working_config.json
-|     An example configuration file. Can also be done via command line arguments to main.py.
 ```
