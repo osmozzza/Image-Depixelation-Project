@@ -23,7 +23,7 @@ def to_grayscale(img_array: np.ndarray) -> np.ndarray:
             gs_image = img_array.copy()
         elif img_array.shape[2] == 3:
             gs_image = np.round(np.dot(img_array[..., :3], [0.2989, 0.5870, 0.1140]))
-            gs_image = np.asarray(gs_image, dtype=np.uint8)
+        gs_image = np.asarray(gs_image, dtype=np.uint8)
         gs_image = np.reshape(gs_image, (1, img_array.shape[0], img_array.shape[1]))
     else:
         raise ValueError("Image does not have required shape!")
