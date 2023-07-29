@@ -4,7 +4,7 @@ This is a machine learning project for depixelating a (known) area of a grayscal
 The goal of the project is to build and train a CNN model. The trained CNN model is then used to predicted pixel values of the pixelated area in a new set of grayscale images with size 64 × 64. Beside the pixelated image, a boolean mask representing the area in the image which is pixelated is passed to the model as input.
 
 
-This project is intended for learning purposes.
+This project is intended for learning purposes and is still being improved.
 
 
 Author: Angelika Vižintin
@@ -21,6 +21,8 @@ example_project
 |    Juypter notebook including creation of datasets and dataloaders, training & evaluation routines and making predicitions on new data
 |- README.md
 |    A readme file containing information about the project
+|- unittests.py
+|    Unit tests.
 |- utils.py
 |    Utility function for plotting training and evaluation loss.
 ```
