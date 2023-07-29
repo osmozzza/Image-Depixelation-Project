@@ -18,18 +18,13 @@ from torchvision import transforms
 def to_grayscale(img_array: np.ndarray) -> np.ndarray:
     """Converts image as numpy array of shape (H, W, 1) or (H, W, 3) to
     grayscale image as numpy array of shape (1, H, W) with uint8 data type."""
-    if img_array.ndim == 2:
-        gs_image = np.reshape(img_array.copy(), (1, img_array.shape[0], img_array.shape[1]))
-    elif img_array.ndim == 3:
-        if img_array.shape[2] != 3:
-            raise ValueError("Image does not have 3 channels!")
-        else:
-            gs_image = (img_array[..., 0]*0.2989 +
-                        img_array[..., 1]*0.5870 +
-                        img_array[..., 2]*0.1140)
-            gs_image = np.round(gs_image)
+    if img_array.ndim == 3 and img_array.shape[2] in [1, 3]:
+        if img_array.shape[2] == 1:
+            gs_image = img_array.copy()
+        elif img_array.shape[2] == 3:
+            gs_image = np.round(np.dot(img_array[..., :3], [0.2989, 0.5870, 0.1140]))
             gs_image = np.asarray(gs_image, dtype=np.uint8)
-            gs_image = np.reshape(gs_image, (1, img_array.shape[0], img_array.shape[1]))
+        gs_image = np.reshape(gs_image, (1, img_array.shape[0], img_array.shape[1]))
     else:
         raise ValueError("Image does not have required shape!")
     return gs_image
