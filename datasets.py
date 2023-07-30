@@ -44,8 +44,8 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
     :param width: The width of the pixelated area.
     :param height: The height of the pixelated area.
     :param size: The size of each pixelation block.
-    :return: a tuple containing the pixelated image normalized to range [0,1], a binary mask indicating
-    the pixelated area, and the original image normalized to range [0,1].
+    :return: a tuple containing the tensor of the pixelated image normalized to range [0,1], a binary mask indicating
+    the pixelated area, and the tensor of the original image normalized to range [0,1].
     """
     original_image = torch.from_numpy(image.copy()).float()
 
