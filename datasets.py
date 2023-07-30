@@ -68,7 +68,7 @@ def prepare_image(image: np.ndarray, x: int, y: int, width: int, height: int, si
 
     # Create Boolean mask with entries True for all original, unchanged pixels and False for all pixelated pixels
     pixelated_area = (..., slice(y, y + height), slice(x, x + width))
-    known_array = np.ones_like(image, dtype=bool).astype(np.bool)
+    known_array = np.ones_like(image, dtype=bool)
     known_array[pixelated_area] = False
 
     return pixelated_image / 255, known_array, original_image / 255
