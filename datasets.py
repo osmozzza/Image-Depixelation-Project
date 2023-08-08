@@ -97,7 +97,7 @@ class TrainingDataset(Dataset):
         with Image.open(image_file) as im:
             image_width = im.width
             image_height = im.height
-            # transforme image to a shape of (64, 64) and center crop
+            # transform image to a shape of (64, 64) and center crop
             transformed_im = transforms_chain(im.copy())
             # convert image to grayscale
             gs_image = to_grayscale(np.array(transformed_im))

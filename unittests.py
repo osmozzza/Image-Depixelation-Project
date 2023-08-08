@@ -1,7 +1,10 @@
 import unittest
+from unittest.mock import patch
+import os
+from PIL import Image
 import numpy as np
 import torch
-from datasets import to_grayscale, prepare_image
+from datasets import to_grayscale, prepare_image, TrainingDataset
 
 class TestToGrayscale(unittest.TestCase):
     def test_to_grayscale_single_channel(self):
@@ -55,6 +58,63 @@ class TestPrepareImage(unittest.TestCase):
         self.assertTrue(np.allclose(pixelated_image, expected_pixelated_image))
         self.assertTrue(np.array_equal(known_array, expected_known_array))
         self.assertTrue(np.allclose(original_image, expected_original_image))
+
+class TestTrainingDataset(unittest.TestCase):
+    def setUp(self):
+        # Create a temporary directory and populate it with some test images
+        self.test_dir = "./test_images"
+        os.makedirs(self.test_dir, exist_ok=True)
+        test_image = np.ones((64, 64, 1))
+        test_image[0:3,0:3,:] = 3
+
+        self.test_images = [
+            test_image,
+            test_image,
+        ]
+        for i, image in enumerate(self.test_images):
+            image_path = os.path.join(self.test_dir, f"test_image_{i}.jpg")
+            pil_image = Image.fromarray(image.squeeze(), 'L')
+            pil_image.save(image_path)
+
+    def tearDown(self):
+        # Remove the temporary directory and test images after each test
+        for i in range(len(self.test_images)):
+            image_path = os.path.join(self.test_dir, f"test_image_{i}.jpg")
+            os.remove(image_path)
+        os.rmdir(self.test_dir)
+
+    def test_getitem(self):
+        np_array = np.ones((1, 64, 64), dtype=np.uint8)
+        gs_image = np_array
+        gs_image[:, 0:3, 0:3] = 3
+
+        original_image = torch.from_numpy(gs_image.copy()).float()/255
+
+        pixelated_image = np_array * 0.0039
+        pixelated_image[:, 0:2, 0] = 0.0118
+        pixelated_image[:, 0:2, 1:3] = 0.0078
+        pixelated_image_tensor = torch.from_numpy(pixelated_image.copy()).float()
+        known_array = np.ones((1, 64, 64), dtype=bool)
+        known_array[:, 0:2, 1:3] = False
+
+        expected_inputs = np.concatenate((pixelated_image_tensor, known_array), axis=0)
+
+        with patch("datasets.to_grayscale") as mock_to_grayscale, \
+                patch("datasets.prepare_image") as mock_prepare_image:
+            mock_to_grayscale.return_value = gs_image
+            mock_prepare_image.return_value = (pixelated_image_tensor, known_array, original_image)
+
+            dataset = TrainingDataset(self.test_dir)
+            sample = dataset[0]
+
+            self.assertTrue(np.array_equal(sample[0], expected_inputs))  # Array comparison of concatenated image and mask
+            self.assertTrue(np.array_equal(sample[1], original_image))  # Array comparison of original image
+            self.assertEqual(sample[2], 0)  # Index
+
+    def test_len(self):
+        dataset = TrainingDataset(self.test_dir)
+        self.assertEqual(len(dataset), 2)
+
 
 
 if __name__ == '__main__':
