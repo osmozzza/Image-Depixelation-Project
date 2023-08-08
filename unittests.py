@@ -4,7 +4,8 @@ import os
 from PIL import Image
 import numpy as np
 import torch
-from datasets import to_grayscale, prepare_image, TrainingDataset
+import dill as pickle
+from datasets import to_grayscale, prepare_image, TrainingDataset, TestDataset
 
 class TestToGrayscale(unittest.TestCase):
     def test_to_grayscale_single_channel(self):
@@ -115,7 +116,39 @@ class TestTrainingDataset(unittest.TestCase):
         dataset = TrainingDataset(self.test_dir)
         self.assertEqual(len(dataset), 2)
 
+class TestTestDataset(unittest.TestCase):
+    def setUp(self):
+        # Create a dictionary with pixelated images and known arrays
+        pixelated_image = np.ones((1, 64, 64))
+        pixelated_image[:, 0:2, 0] = 3
+        pixelated_image[:, 0:2, 1:3] = 2
 
+        known_array = np.ones((1, 64, 64), dtype=bool)
+        known_array[:, 0:2, 1:3] = False
+
+        self.expected_inputs = np.concatenate((pixelated_image/255, known_array), axis=0)
+
+        test_set = {'pixelated_images': (pixelated_image, pixelated_image),
+                    'known_arrays': (known_array, known_array)}
+
+        with open("test_dataset.pkl", 'wb') as file:
+            pickle.dump(test_set, file)
+
+    def tearDown(self):
+        # Remove the test pickle file after the test
+        os.remove("test_dataset.pkl")
+
+    def test_getitem(self):
+        dataset = TestDataset("test_dataset.pkl")
+        sample = dataset[0]
+
+        self.assertTrue(np.allclose(sample[0].numpy(), self.expected_inputs)) # Concatenated image and mask as tensor
+        self.assertTrue(np.array_equal(sample[1], self.expected_inputs)) # Concatenated image and mask as NumPy arrray
+        self.assertEqual(sample[2], 0)  # Index
+
+    def test_len(self):
+        dataset = TestDataset("test_dataset.pkl")
+        self.assertEqual(len(dataset), 2)
 
 if __name__ == '__main__':
     unittest.main()
