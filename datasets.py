@@ -131,7 +131,10 @@ class TestDataset(Dataset):
     def __init__(self, pkl_file):
         """ The class accesses the pixelated images and known arrays (i.e. Boolean masks) from the specified
         pickle file pkl_file, normalizes the pixelated images to the range [0,1] and prepares inputs for a CNN
-        by stacking the pixelated images with the known arrays."""
+        by stacking the pixelated images with the known arrays.
+
+       The pkl_file contains a dictionary with the following entries: pixelated_images (a tuple of NumPy arrays
+       representing the pixelated images), known_arrays (a tuple of NumPy arrays representing the boolean masks)."""
         with open(pkl_file, 'rb') as file:
             test_set = pickle.load(file)
         self.pixelated_images = test_set['pixelated_images']
